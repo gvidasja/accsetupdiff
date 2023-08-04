@@ -31,8 +31,8 @@ function App() {
 }
 
 function Diff({ color, src, dst }: { color: string; src: SetupFile; dst: SetupFile }) {
-  const srcProps = getProps(src.content)
-  const dstProps = Object.fromEntries(getProps(dst.content))
+  const srcProps = getProps(src?.content)
+  const dstProps = Object.fromEntries(getProps(dst?.content))
 
   return srcProps.map(([path, value]) => (
     <div style={{ background: dstProps[path] === value ? 'inherit' : color }}>
@@ -42,6 +42,10 @@ function Diff({ color, src, dst }: { color: string; src: SetupFile; dst: SetupFi
 }
 
 function getProps(file: O, base = ''): P[] {
+  if (!file) {
+    return []
+  }
+
   const props: P[] = []
 
   for (const key in file) {
