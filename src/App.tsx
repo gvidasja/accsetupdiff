@@ -1,4 +1,4 @@
-import { CSSProperties, useEffect, useState } from 'react'
+import { CSSProperties, useEffect, useMemo, useState } from 'react'
 
 const colStyle: CSSProperties = {
   display: 'flex',
@@ -17,28 +17,65 @@ function App() {
   }, [file1, file2])
 
   return (
-    <div style={rowStyle}>
-      <div style={colStyle}>
-        <input type="file" onChange={async e => setFile1(await readFile(e.target.files))} />
-        <Diff color="#d98" src={file1} dst={file2} />
+    <div style={rowStyle} className="gap">
+      <div style={colStyle} className="gap">
+        <FileInput value={file1} onChange={setFile1} />
+        <Diff side="left" src={file1} dst={file2} />
       </div>
-      <div style={colStyle}>
-        <input type="file" onChange={async e => setFile2(await readFile(e.target.files))} />
-        <Diff color="#ad9" src={file2} dst={file1} />
+      <div style={colStyle} className="gap">
+        <FileInput value={file2} onChange={setFile2} />
+        <Diff side="right" src={file2} dst={file1} />
       </div>
     </div>
   )
 }
 
-function Diff({ color, src, dst }: { color: string; src: SetupFile; dst: SetupFile }) {
+function FileInput({ onChange, value }: { onChange: (f: SetupFile) => void; value: SetupFile }) {
+  const id = useMemo(() => btoa(Math.random().toString()), [])
+
+  return (
+    <div className="file-input">
+      <label className="file-input" htmlFor={id}>
+        {value?.name ? value.name : 'Select file'}
+      </label>
+      <input type="file" onChange={async e => onChange(await readFile(e.target.files))} id={id} />
+    </div>
+  )
+}
+
+function Diff({ side: side, src, dst }: { side: string; src: SetupFile; dst: SetupFile }) {
   const srcProps = getProps(src?.content)
   const dstProps = Object.fromEntries(getProps(dst?.content))
 
-  return srcProps.map(([path, value]) => (
-    <div style={{ background: dstProps[path] === value ? 'inherit' : color }}>
-      {path}: {JSON.stringify(value)}
+  return (
+    <div>
+      {srcProps.map(([path, value]) => (
+        <div className={'diff-line ' + (dstProps[path] === value ? '' : side)}>
+          {path}: {JSON.stringify(value)}
+          {formatDiff(value, dstProps[path])}
+        </div>
+      ))}
     </div>
-  ))
+  )
+}
+
+function formatDiff(src: V, dst: V) {
+  if (typeof src === 'string' || typeof dst === 'string') {
+    return ''
+  }
+
+  const diff = src - dst
+
+  if (!diff) {
+    return ''
+  }
+
+  return (
+    <div className={diff < 0 ? 'diff-down' : 'diff-up'}>
+      {diff < 0 ? '▼' : '▲'}
+      {Math.abs(diff)}
+    </div>
+  )
 }
 
 function getProps(file: O, base = ''): P[] {
@@ -89,6 +126,7 @@ interface SetupFile {
   content: O
 }
 
-type O = Record<string, unknown>
-type P = [string, unknown]
+type O = Record<string, V>
+type P = [string, V]
+type V = number | string
 export default App

@@ -4,3 +4,82 @@ button,
 input {
   font-family: 'Fantasque Sans Mono', Menlo, Consolas, 'Ubuntu Mono', monospace;
 }
+
+body {
+  background: #000;
+}
+
+:root {
+  --input-color: hsl(90, 50%, 50%);
+  --input-border-color: hsl(90, 50%, 40%);
+  --input-border-dark-color: hsl(90, 50%, 30%);
+  --input-border-light-color: hsl(90, 50%, 60%);
+  --right-color: hsl(12, 50%, 50%);
+  --gap: 1em;
+  --transition: 0.05s ease;
+}
+
+.gap {
+  gap: var(--gap);
+}
+
+.file-input input[type='file'] {
+  display: none;
+}
+
+.file-input label {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--input-color);
+  min-width: 20vw;
+  width: 100%;
+  cursor: pointer;
+  padding: 2em 4em;
+  border: 3px dashed var(--input-border-color);
+  border-radius: 6px;
+  box-sizing: border-box;
+  transition: background-color var(--transition), border-color var(--transition);
+}
+
+.file-input label:hover {
+  background-color: var(--input-border-light-color);
+  border-color: var(--input-border-color);
+}
+
+.file-input label:active {
+  background-color: var(--input-border-color);
+  border-color: var(--input-border-dark-color);
+}
+
+.diff-line {
+  display: flex;
+  gap: var(--gap);
+  padding: 1px 2px;
+  color: white;
+}
+
+.diff-line.left {
+  color: black;
+  background-color: var(--input-color);
+}
+
+.diff-line.right {
+  color: black;
+  background-color: var(--right-color);
+}
+
+.diff-down,
+.diff-up {
+  display: inline-block;
+}
+
+.diff-down {
+  background: hsl(15, 40%, 30%);
+  color: white;
+}
+
+.diff-up {
+  background: hsl(90, 40%, 30%);
+  color: white;
+}
