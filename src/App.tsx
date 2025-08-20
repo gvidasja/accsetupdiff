@@ -59,7 +59,7 @@ function Diff({ side: side, src, dst }: { side: string; src: SetupFile; dst: Set
   )
 }
 
-function formatDiff(src: V, dst: V) {
+function formatDiff(src: BasicValue, dst: BasicValue) {
   if (typeof src === 'string' || typeof dst === 'string') {
     return ''
   }
@@ -108,6 +108,11 @@ function tokenize([key, value]: P): P {
   return [key.replace(/^\./, '').split('.').join(' -> '), value]
 }
 
+const FILE_PARSER: Record<string, (x: string) => O> = {
+  json: JSON.parse,
+  ini: parseINI,
+}
+
 async function readFile(files: FileList | null): Promise<SetupFile> {
   if (!files) {
     return {} as SetupFile
@@ -115,9 +120,23 @@ async function readFile(files: FileList | null): Promise<SetupFile> {
 
   const file = files[0]
 
+  const contentText = await file.text()
+
+  const extension = file.name.split('.').at(-1)
+
+  if (!extension) {
+    throw new Error('invalid file extension: ' + file.name)
+  }
+
+  const parser = FILE_PARSER[extension]
+
+  if (!parser) {
+    throw new Error('unsupported file type: ' + file.name)
+  }
+
   return {
     name: file.name,
-    content: JSON.parse(await file.text()),
+    content: FILE_PARSER[extension](contentText),
   }
 }
 
@@ -126,7 +145,55 @@ interface SetupFile {
   content: O
 }
 
-type O = Record<string, V>
-type P = [string, V]
-type V = number | string
+type BasicValue = number | string
+
+type V = BasicValue | O
+
+interface O {
+  [key: string]: V
+}
+
+type P = [string, BasicValue]
 export default App
+
+function parseINI(text: string): O {
+  const value: Record<string, Record<string, BasicValue>> = {}
+
+  let currentSection = ''
+
+  const validLines = text
+    .split('\n')
+    .map(x => x.trim())
+    .filter(Boolean)
+
+  for (const line of validLines) {
+    const lineIsSection = /^\[([^\[\]]+)\]$/.test(line)
+
+    if (lineIsSection) {
+      currentSection = line
+      value[currentSection] = {}
+    } else if (currentSection && !lineIsSection) {
+      const parts = line.split('=')
+
+      if (parts.length != 2) {
+        throw new Error('invalid line: ' + line)
+      }
+
+      const [key, v] = line.split('=')
+
+      value[currentSection][key] = parseINIValue(v)
+    }
+  }
+
+  return value
+}
+
+function parseINIValue(str: string): BasicValue {
+  const numberValue = Number(str)
+
+  if (isNaN(numberValue)) {
+    return str
+  }
+
+  return numberValue
+}
